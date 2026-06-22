@@ -1,0 +1,421 @@
+openapi: 3.1.0
+info:
+  title: Api
+  version: 0.1.0
+  description: College Compass API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: colleges
+    description: College operations
+  - name: favorites
+    description: Favorites operations
+  - name: quiz
+    description: AI recommendation quiz
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /colleges:
+    get:
+      operationId: listColleges
+      tags: [colleges]
+      summary: List colleges
+      description: List and search colleges with optional filters
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Search query for college name or location
+        - name: type
+          in: query
+          schema:
+            type: string
+          description: Filter by college type (public, private, liberal-arts)
+        - name: state
+          in: query
+          schema:
+            type: string
+          description: Filter by state
+        - name: minAcceptance
+          in: query
+          schema:
+            type: number
+          description: Minimum acceptance rate (0-100)
+        - name: maxAcceptance
+          in: query
+          schema:
+            type: number
+          description: Maximum acceptance rate (0-100)
+        - name: minRanking
+          in: query
+          schema:
+            type: integer
+          description: Minimum national ranking
+        - name: maxRanking
+          in: query
+          schema:
+            type: integer
+          description: Maximum national ranking
+        - name: featured
+          in: query
+          schema:
+            type: boolean
+          description: Return only featured colleges
+      responses:
+        "200":
+          description: List of colleges
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/College"
+
+  /colleges/featured:
+    get:
+      operationId: getFeaturedColleges
+      tags: [colleges]
+      summary: Get featured colleges
+      description: Returns featured/top colleges for the landing page
+      responses:
+        "200":
+          description: Featured colleges
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/College"
+
+  /colleges/stats:
+    get:
+      operationId: getCollegeStats
+      tags: [colleges]
+      summary: Get platform statistics
+      description: Returns aggregate statistics for the platform
+      responses:
+        "200":
+          description: Platform stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CollegeStats"
+
+  /colleges/{id}:
+    get:
+      operationId: getCollege
+      tags: [colleges]
+      summary: Get college details
+      description: Returns detailed information about a specific college
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: College details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/College"
+        "404":
+          description: College not found
+
+  /colleges/compare:
+    post:
+      operationId: compareColleges
+      tags: [colleges]
+      summary: Compare colleges
+      description: Returns side-by-side comparison data for a set of colleges
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CompareInput"
+      responses:
+        "200":
+          description: Comparison data
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/College"
+
+  /favorites:
+    get:
+      operationId: getFavorites
+      tags: [favorites]
+      summary: Get favorites
+      description: Returns all favorited colleges (by session)
+      responses:
+        "200":
+          description: Favorite colleges
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Favorite"
+
+  /favorites/{collegeId}:
+    post:
+      operationId: addFavorite
+      tags: [favorites]
+      summary: Add to favorites
+      description: Add a college to favorites
+      parameters:
+        - name: collegeId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "201":
+          description: Added to favorites
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Favorite"
+    delete:
+      operationId: removeFavorite
+      tags: [favorites]
+      summary: Remove from favorites
+      description: Remove a college from favorites
+      parameters:
+        - name: collegeId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Removed from favorites
+
+  /quiz:
+    post:
+      operationId: submitQuiz
+      tags: [quiz]
+      summary: Submit quiz and get recommendations
+      description: Takes user preferences and returns matched colleges with scores and reasons
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuizInput"
+      responses:
+        "200":
+          description: Recommended colleges with match scores
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/QuizResult"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+
+    College:
+      type: object
+      required:
+        - id
+        - name
+        - location
+        - state
+        - type
+        - ranking
+        - acceptanceRate
+        - tuition
+        - enrollment
+        - founded
+        - description
+        - imageUrl
+        - featured
+        - programs
+        - sat
+        - act
+        - graduationRate
+        - campusSize
+        - setting
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        location:
+          type: string
+        state:
+          type: string
+        type:
+          type: string
+          description: "public | private | liberal-arts"
+        ranking:
+          type: integer
+          description: National ranking
+        acceptanceRate:
+          type: number
+          description: Acceptance rate as a percentage
+        tuition:
+          type: integer
+          description: Annual tuition in USD
+        enrollment:
+          type: integer
+          description: Total student enrollment
+        founded:
+          type: integer
+          description: Year founded
+        description:
+          type: string
+        imageUrl:
+          type: string
+        featured:
+          type: boolean
+        programs:
+          type: array
+          items:
+            type: string
+        sat:
+          type: object
+          required: [min, max]
+          properties:
+            min:
+              type: integer
+            max:
+              type: integer
+        act:
+          type: object
+          required: [min, max]
+          properties:
+            min:
+              type: integer
+            max:
+              type: integer
+        graduationRate:
+          type: number
+        campusSize:
+          type: string
+        setting:
+          type: string
+          description: "urban | suburban | rural"
+        website:
+          type: ["string", "null"]
+        color:
+          type: ["string", "null"]
+
+    CollegeStats:
+      type: object
+      required:
+        - totalColleges
+        - states
+        - avgAcceptanceRate
+        - totalStudents
+      properties:
+        totalColleges:
+          type: integer
+        states:
+          type: integer
+        avgAcceptanceRate:
+          type: number
+        totalStudents:
+          type: integer
+
+    CompareInput:
+      type: object
+      required:
+        - ids
+      properties:
+        ids:
+          type: array
+          items:
+            type: integer
+
+    Favorite:
+      type: object
+      required:
+        - id
+        - collegeId
+        - createdAt
+      properties:
+        id:
+          type: integer
+        collegeId:
+          type: integer
+        createdAt:
+          type: string
+
+    QuizInput:
+      type: object
+      required:
+        - interests
+        - budget
+        - setting
+        - campusSize
+        - selectivity
+        - schoolType
+      properties:
+        interests:
+          type: array
+          items:
+            type: string
+          description: Academic interest areas (e.g. "Computer Science", "Medicine")
+        budget:
+          type: string
+          description: "under30k | 30k-50k | 50k-65k | any"
+        setting:
+          type: string
+          description: "urban | suburban | rural | any"
+        campusSize:
+          type: string
+          description: "small | medium | large | any"
+        selectivity:
+          type: string
+          description: "highly-selective | selective | any"
+        schoolType:
+          type: string
+          description: "public | private | liberal-arts | any"
+
+    QuizResult:
+      type: object
+      required:
+        - college
+        - matchScore
+        - reasons
+      properties:
+        college:
+          $ref: "#/components/schemas/College"
+        matchScore:
+          type: integer
+          description: Match percentage 0-100
+        reasons:
+          type: array
+          items:
+            type: string
+          description: Human-readable reasons for the match
